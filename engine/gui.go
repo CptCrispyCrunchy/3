@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"path"
 	"reflect"
 	"strconv"
@@ -102,9 +103,10 @@ func (g *guistate) PrepareServer() {
 		g.incCacheBreaker()
 	})
 
-	http.Handle("/", g)
-	http.HandleFunc("/render/", g.ServeRender)
-	http.HandleFunc("/plot/", g.servePlot)
+	base_url := os.Getenv("MUMAX3_REVERSE_PROXY_URL")
+	http.Handle(base_url+"/", g)
+	http.HandleFunc(base_url+"/render/", g.ServeRender)
+	http.HandleFunc(base_url+"/plot/", g.servePlot)
 
 	g.Set("title", util.NoExt(OD()[:len(OD())-1]))
 	g.prepareConsole()
@@ -411,11 +413,14 @@ func (g *guistate) prepareOnUpdate() {
 			quant := g.StringValue("renderQuant")
 			comp := g.StringValue("renderComp")
 			cachebreaker := "?" + g.StringValue("nsteps") + "_" + fmt.Sprint(g.cacheBreaker())
+
+			base_url := os.Getenv("MUMAX3_REVERSE_PROXY_URL")
+
 			g.Attr("renderLayer", "max", Mesh().Size()[Z]-1)
-			g.Set("display", "/render/"+quant+"/"+comp+cachebreaker)
+			g.Set("display", base_url+"/render/"+quant+"/"+comp+cachebreaker)
 
 			// plot
-			gui_.Set("plot", "/plot/"+cachebreaker)
+			gui_.Set("plot", base_url+"/plot/"+cachebreaker)
 
 			// parameters
 			for _, p := range g.Params {
